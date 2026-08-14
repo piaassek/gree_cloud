@@ -19,7 +19,7 @@ Ten kod wymusza na serwerach Gree przesyłanie pełnych paczek diagnostycznych (
   * Unikaj bezpośredniego nawiewu (Anti-Direct Blow)
   * Agresywne oszczędzanie energii (SvSt)
   * Samoczyszczenie (AutoClean)
-
+![alt text](image.png)![alt text](image-1.png)
 ## 📦 Instalacja przez HACS (Zalecane)
 
 Upewnij się, że masz przygotowany plik `hacs.json` w swoim repozytorium.
