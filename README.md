@@ -21,6 +21,7 @@ Ten kod wymusza na serwerach Gree przesyłanie pełnych paczek diagnostycznych (
   * Samoczyszczenie (AutoClean)
   
 ![alt text](image.png)![alt text](image-1.png)
+
 ## 📦 Instalacja przez HACS (Zalecane)
 
 Upewnij się, że masz przygotowany plik `hacs.json` w swoim repozytorium.
