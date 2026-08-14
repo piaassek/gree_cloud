@@ -1,0 +1,15 @@
+{
+  "domain": "gree_cloud",
+  "name": "Gree Climate Cloud (Custom)",
+  "codeowners": ["@piaassek"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/piaassek/gree_cloud",
+  "issue_tracker": "https://github.com/piaassek/gree_cloud/issues",
+  "iot_class": "cloud_polling",
+  "integration_type": "hub",
+  "loggers": ["greeclimate"],
+  "requirements": ["greeclimate @ git+https://github.com/davo22/greeclimate.git@1.0.3"],
+  "version": "1.2.0",
+  "brand": "gree"
+}
