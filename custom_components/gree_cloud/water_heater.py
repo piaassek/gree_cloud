@@ -18,7 +18,6 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import (
-    DISPATCH_DEVICE_DISCOVERED,
     HWHP_OPERATION_BOOST,
     HWHP_OPERATION_HEAT_PUMP,
     HWHP_PROP_POW_CONSUMP,
@@ -33,8 +32,13 @@ from .const import (
     HWHP_TEMP_MIN,
     HWHP_WMOD_BOOST,
     HWHP_WMOD_HEAT_PUMP,
+    get_device_discovered_signal,
 )
-from .coordinator import CloudDeviceDataUpdateCoordinator, GreeCloudConfigEntry, is_hwhp_device
+from .coordinator import (
+    CloudDeviceDataUpdateCoordinator,
+    GreeCloudConfigEntry,
+    is_hwhp_device,
+)
 from .entity import GreeCloudEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -70,7 +74,9 @@ async def async_setup_entry(
         init_device(coordinator)
 
     entry.async_on_unload(
-        async_dispatcher_connect(hass, DISPATCH_DEVICE_DISCOVERED, init_device)
+        async_dispatcher_connect(
+            hass, get_device_discovered_signal(entry.entry_id), init_device
+        )
     )
 
 
@@ -107,9 +113,12 @@ class GreeCloudWaterHeaterEntity(GreeCloudEntity, WaterHeaterEntity):
         pow_consump = props.get(HWHP_PROP_POW_CONSUMP)
         if pow_consump is not None:
             attrs["power_consumption"] = pow_consump
+
         water_percent_raw = props.get(HWHP_PROP_WATER_PERCENT)
-        if water_percent_raw is not None:
-            attrs["water_level_percent"] = water_percent_raw - HWHP_TEMP_ENCODING_OFFSET
+        if water_percent_raw is not None and water_percent_raw > 0:
+            attrs["water_level_percent"] = max(
+                0, min(100, water_percent_raw - HWHP_TEMP_ENCODING_OFFSET)
+            )
 
         return attrs
 
@@ -117,7 +126,7 @@ class GreeCloudWaterHeaterEntity(GreeCloudEntity, WaterHeaterEntity):
     def current_temperature(self) -> float | None:
         """Return the current water temperature reported by the device."""
         raw = self.coordinator.device.raw_properties.get(HWHP_PROP_WATER_TEMP)
-        if raw is None:
+        if raw is None or raw <= 0:
             return None
         return raw - HWHP_TEMP_ENCODING_OFFSET
 
@@ -182,7 +191,11 @@ class GreeCloudWaterHeaterEntity(GreeCloudEntity, WaterHeaterEntity):
             device.power = False
         else:
             device.power = True
-            wmod = HWHP_WMOD_BOOST if operation_mode == HWHP_OPERATION_BOOST else HWHP_WMOD_HEAT_PUMP
+            wmod = (
+                HWHP_WMOD_BOOST
+                if operation_mode == HWHP_OPERATION_BOOST
+                else HWHP_WMOD_HEAT_PUMP
+            )
             device.raw_properties[HWHP_PROP_WMOD] = wmod
             if HWHP_PROP_WMOD not in device._dirty:
                 device._dirty.append(HWHP_PROP_WMOD)

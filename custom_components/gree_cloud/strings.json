@@ -21,9 +21,99 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "fault": {
+        "name": "Fault"
+      }
+    },
     "sensor": {
+      "indoor_temperature": {
+        "name": "Indoor temperature"
+      },
+      "outdoor_temperature": {
+        "name": "Outdoor temperature"
+      },
+      "compressor_temperature": {
+        "name": "Compressor temperature"
+      },
+      "compressor_frequency": {
+        "name": "Compressor frequency"
+      },
       "energy_total": {
-        "name": "Energy"
+        "name": "Energy consumption"
+      },
+      "evaporator_temperature": {
+        "name": "Evaporator temperature"
+      },
+      "pm25": {
+        "name": "PM2.5"
+      },
+      "wifi_status": {
+        "name": "Wi-Fi status"
+      }
+    },
+    "switch": {
+      "panel_light": {
+        "name": "Panel light"
+      },
+      "quiet": {
+        "name": "Quiet mode"
+      },
+      "fresh_air": {
+        "name": "Fresh air"
+      },
+      "xfan": {
+        "name": "X-Fan"
+      },
+      "health_mode": {
+        "name": "Health mode (Anion)"
+      },
+      "uvc_control": {
+        "name": "UVC sterilization"
+      },
+      "anti_direct_blow": {
+        "name": "Anti-direct blow"
+      },
+      "energy_saving": {
+        "name": "Energy saving"
+      },
+      "auto_clean": {
+        "name": "Auto clean"
+      },
+      "child_lock": {
+        "name": "Child lock"
+      },
+      "dazzling": {
+        "name": "Dazzling light"
+      },
+      "buzzer": {
+        "name": "Buzzer"
+      }
+    },
+    "select": {
+      "swing_vertical": {
+        "name": "Vertical swing",
+        "state": {
+          "off": "Off",
+          "auto": "Full swing (Auto)",
+          "fixed_top": "Fixed: Top",
+          "fixed_mid_top": "Fixed: Mid-top",
+          "fixed_mid": "Fixed: Middle",
+          "fixed_mid_bottom": "Fixed: Mid-bottom",
+          "fixed_bottom": "Fixed: Bottom"
+        }
+      },
+      "swing_horizontal": {
+        "name": "Horizontal swing",
+        "state": {
+          "off": "Off",
+          "auto": "Full swing (Auto)",
+          "fixed_left": "Fixed: Left",
+          "fixed_mid_left": "Fixed: Mid-left",
+          "fixed_mid": "Fixed: Middle",
+          "fixed_mid_right": "Fixed: Mid-right",
+          "fixed_right": "Fixed: Right"
+        }
       }
     }
   }

@@ -42,12 +42,16 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import (
-    DISPATCH_DEVICE_DISCOVERED,
     FAN_MEDIUM_HIGH,
     FAN_MEDIUM_LOW,
     TARGET_TEMPERATURE_STEP,
+    get_device_discovered_signal,
 )
-from .coordinator import CloudDeviceDataUpdateCoordinator, GreeCloudConfigEntry, is_hwhp_device
+from .coordinator import (
+    CloudDeviceDataUpdateCoordinator,
+    GreeCloudConfigEntry,
+    is_hwhp_device,
+)
 from .entity import GreeCloudEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -104,7 +108,9 @@ async def async_setup_entry(
         init_device(coordinator)
 
     entry.async_on_unload(
-        async_dispatcher_connect(hass, DISPATCH_DEVICE_DISCOVERED, init_device)
+        async_dispatcher_connect(
+            hass, get_device_discovered_signal(entry.entry_id), init_device
+        )
     )
 
 
@@ -157,7 +163,7 @@ class GreeCloudClimateEntity(GreeCloudEntity, ClimateEntity):
         _LOGGER.debug(
             "Setting temperature to %d for %s",
             temperature,
-            self._attr_name,
+            self.coordinator.device.device_info.name,
         )
 
         self.coordinator.device.target_temperature = temperature
@@ -180,7 +186,7 @@ class GreeCloudClimateEntity(GreeCloudEntity, ClimateEntity):
         _LOGGER.debug(
             "Setting HVAC mode to %s for device %s",
             hvac_mode,
-            self._attr_name,
+            self.coordinator.device.device_info.name,
         )
 
         if hvac_mode == HVACMode.OFF:
@@ -198,7 +204,10 @@ class GreeCloudClimateEntity(GreeCloudEntity, ClimateEntity):
 
     async def async_turn_on(self) -> None:
         """Turn on the device."""
-        _LOGGER.debug("Turning on HVAC for device %s", self._attr_name)
+        _LOGGER.debug(
+            "Turning on HVAC for device %s",
+            self.coordinator.device.device_info.name,
+        )
 
         self.coordinator.device.power = True
         await self.coordinator.push_state_update()
@@ -206,7 +215,10 @@ class GreeCloudClimateEntity(GreeCloudEntity, ClimateEntity):
 
     async def async_turn_off(self) -> None:
         """Turn off the device."""
-        _LOGGER.debug("Turning off HVAC for device %s", self._attr_name)
+        _LOGGER.debug(
+            "Turning off HVAC for device %s",
+            self.coordinator.device.device_info.name,
+        )
 
         self.coordinator.device.power = False
         await self.coordinator.push_state_update()
@@ -233,7 +245,7 @@ class GreeCloudClimateEntity(GreeCloudEntity, ClimateEntity):
         _LOGGER.debug(
             "Setting preset mode to %s for device %s",
             preset_mode,
-            self._attr_name,
+            self.coordinator.device.device_info.name,
         )
 
         self.coordinator.device.steady_heat = False
@@ -271,8 +283,12 @@ class GreeCloudClimateEntity(GreeCloudEntity, ClimateEntity):
     @property
     def swing_mode(self) -> str:
         """Return the current swing mode for the device."""
-        h_swing = self.coordinator.device.horizontal_swing == HorizontalSwing.FullSwing
-        v_swing = self.coordinator.device.vertical_swing == VerticalSwing.FullSwing
+        h_swing = (
+            self.coordinator.device.horizontal_swing == HorizontalSwing.FullSwing
+        )
+        v_swing = (
+            self.coordinator.device.vertical_swing == VerticalSwing.FullSwing
+        )
 
         if h_swing and v_swing:
             return SWING_BOTH
@@ -290,7 +306,7 @@ class GreeCloudClimateEntity(GreeCloudEntity, ClimateEntity):
         _LOGGER.debug(
             "Setting swing mode to %s for device %s",
             swing_mode,
-            self._attr_name,
+            self.coordinator.device.device_info.name,
         )
 
         self.coordinator.device.horizontal_swing = HorizontalSwing.Center

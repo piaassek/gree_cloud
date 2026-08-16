@@ -2,42 +2,44 @@
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
-from typing import Any
-
-from greeclimate.device import Device
+import logging
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import DISPATCH_DEVICE_DISCOVERED
-from .coordinator import CloudDeviceDataUpdateCoordinator, GreeCloudConfigEntry, is_hwhp_device
+from .const import get_device_discovered_signal
+from .coordinator import (
+    CloudDeviceDataUpdateCoordinator,
+    GreeCloudConfigEntry,
+    is_hwhp_device,
+)
 from .entity import GreeCloudEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-# Protokoły Gree dla żaluzji: 0 = Off, 1 = Auto, 2-6 = 5 stałych pozycji
-SWING_V_MAP = {
-    "0": "Wyłączony",
-    "1": "Pełny zakres (Auto)",
-    "2": "Stała: Góra",
-    "3": "Stała: Środek-Góra",
-    "4": "Stała: Środek",
-    "5": "Stała: Środek-Dół",
-    "6": "Stała: Dół",
+# Protocol mapping: 0 = Off, 1 = Auto (full swing), 2-6 = 5 fixed positions
+SWING_V_MAP: dict[str, str] = {
+    "0": "off",
+    "1": "auto",
+    "2": "fixed_top",
+    "3": "fixed_mid_top",
+    "4": "fixed_mid",
+    "5": "fixed_mid_bottom",
+    "6": "fixed_bottom",
 }
 
-SWING_H_MAP = {
-    "0": "Wyłączony",
-    "1": "Pełny zakres (Auto)",
-    "2": "Stała: Lewo",
-    "3": "Stała: Środek-Lewo",
-    "4": "Stała: Środek",
-    "5": "Stała: Środek-Prawo",
-    "6": "Stała: Prawo",
+SWING_H_MAP: dict[str, str] = {
+    "0": "off",
+    "1": "auto",
+    "2": "fixed_left",
+    "3": "fixed_mid_left",
+    "4": "fixed_mid",
+    "5": "fixed_mid_right",
+    "6": "fixed_right",
 }
 
 SWING_V_INV = {v: k for k, v in SWING_V_MAP.items()}
@@ -46,6 +48,8 @@ SWING_H_INV = {v: k for k, v in SWING_H_MAP.items()}
 
 @dataclass(kw_only=True, frozen=True)
 class GreeCloudSelectEntityDescription(SelectEntityDescription):
+    """Class describing Gree Cloud select entities."""
+
     gree_key: str
     options_map: dict[str, str]
     options_inv: dict[str, str]
@@ -54,18 +58,20 @@ class GreeCloudSelectEntityDescription(SelectEntityDescription):
 SELECT_TYPES: tuple[GreeCloudSelectEntityDescription, ...] = (
     GreeCloudSelectEntityDescription(
         key="swing_vertical",
+        translation_key="swing_vertical",
         gree_key="SwUpDn",
-        name="Żaluzja pionowa",
         icon="mdi:arrow-up-down",
+        entity_category=EntityCategory.CONFIG,
         options=list(SWING_V_MAP.values()),
         options_map=SWING_V_MAP,
         options_inv=SWING_V_INV,
     ),
     GreeCloudSelectEntityDescription(
         key="swing_horizontal",
+        translation_key="swing_horizontal",
         gree_key="SwingLfRig",
-        name="Żaluzja pozioma",
         icon="mdi:arrow-left-right",
+        entity_category=EntityCategory.CONFIG,
         options=list(SWING_H_MAP.values()),
         options_map=SWING_H_MAP,
         options_inv=SWING_H_INV,
@@ -78,6 +84,8 @@ async def async_setup_entry(
     entry: GreeCloudConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    """Set up Gree Cloud select entities."""
+
     @callback
     def init_device(coordinator: CloudDeviceDataUpdateCoordinator) -> None:
         if is_hwhp_device(coordinator):
@@ -91,11 +99,15 @@ async def async_setup_entry(
         init_device(coordinator)
 
     entry.async_on_unload(
-        async_dispatcher_connect(hass, DISPATCH_DEVICE_DISCOVERED, init_device)
+        async_dispatcher_connect(
+            hass, get_device_discovered_signal(entry.entry_id), init_device
+        )
     )
 
 
 class GreeCloudSelect(GreeCloudEntity, SelectEntity):
+    """Representation of a Gree Cloud select entity."""
+
     entity_description: GreeCloudSelectEntityDescription
 
     def __init__(
@@ -103,36 +115,47 @@ class GreeCloudSelect(GreeCloudEntity, SelectEntity):
         coordinator: CloudDeviceDataUpdateCoordinator,
         description: GreeCloudSelectEntityDescription,
     ) -> None:
+        """Initialize the Gree Cloud select entity."""
         super().__init__(coordinator)
         self.entity_description = description
-        dev_name = coordinator.device.device_info.name if hasattr(coordinator.device.device_info, "name") else "Gree"
-        self._attr_name = f"{dev_name} {description.name}"
-        self._attr_unique_id = f"{coordinator.device.device_info.mac}_{description.key}"
+        self._attr_unique_id = (
+            f"{coordinator.device.device_info.mac}_{description.key}_v3"
+        )
 
     @property
     def current_option(self) -> str | None:
-        """Odczytuje aktualną pozycję z pamięci urządzenia."""
+        """Return current option from device memory."""
         raw_val = None
         if hasattr(self.coordinator.device, "raw_properties"):
-            raw_val = self.coordinator.device.raw_properties.get(self.entity_description.gree_key)
-        
-        # Jeśli z chmury przyjdzie np. wartość 7+ (niestandardowe oscylacje), wracamy do domyślnego
+            raw_val = self.coordinator.device.raw_properties.get(
+                self.entity_description.gree_key
+            )
+
         if raw_val is not None:
             str_val = str(raw_val)
-            return self.entity_description.options_map.get(str_val, self.entity_description.options_map.get("1"))
-            
-        return self.entity_description.options_map.get("0")
+            return self.entity_description.options_map.get(
+                str_val, self.entity_description.options_map.get("1", "auto")
+            )
+
+        return self.entity_description.options_map.get("0", "off")
 
     async def async_select_option(self, option: str) -> None:
-        """Wysyła wybraną pozycję do chmury Gree."""
+        """Send selected option to Gree Cloud."""
         raw_val = int(self.entity_description.options_inv[option])
-        
+
         if hasattr(self.coordinator.device, "raw_properties"):
-            self.coordinator.device.raw_properties[self.entity_description.gree_key] = raw_val
-            
-            # Dodajemy zmienną do kolejki publikacji MQTT
-            if hasattr(self.coordinator.device, "_dirty") and self.entity_description.gree_key not in self.coordinator.device._dirty:
-                self.coordinator.device._dirty.append(self.entity_description.gree_key)
-                
+            self.coordinator.device.raw_properties[
+                self.entity_description.gree_key
+            ] = raw_val
+
+            if (
+                hasattr(self.coordinator.device, "_dirty")
+                and self.entity_description.gree_key
+                not in self.coordinator.device._dirty
+            ):
+                self.coordinator.device._dirty.append(
+                    self.entity_description.gree_key
+                )
+
         await self.coordinator.push_state_update()
         self.async_write_ha_state()

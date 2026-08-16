@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Konfiguracja Gree Climate Cloud",
+        "description": "Wprowadź dane logowania do konta Gree+",
+        "data": {
+          "server": "Region serwera",
+          "username": "Nazwa użytkownika / E-mail",
+          "password": "Hasło"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nie udało się połączyć z chmurą Gree",
+      "invalid_auth": "Nieprawidłowe dane uwierzytelniające",
+      "unknown": "Wystąpił nieoczekiwany błąd"
+    },
+    "abort": {
+      "already_configured": "To konto jest już skonfigurowane"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "fault": {
+        "name": "Awaria / Błąd"
+      }
+    },
+    "sensor": {
+      "indoor_temperature": {
+        "name": "Temperatura wewnętrzna"
+      },
+      "outdoor_temperature": {
+        "name": "Temperatura zewnętrzna"
+      },
+      "compressor_temperature": {
+        "name": "Temperatura sprężarki"
+      },
+      "compressor_frequency": {
+        "name": "Częstotliwość sprężarki"
+      },
+      "energy_total": {
+        "name": "Całkowite zużycie energii"
+      },
+      "evaporator_temperature": {
+        "name": "Temperatura parownika"
+      },
+      "pm25": {
+        "name": "PM2.5"
+      },
+      "wifi_status": {
+        "name": "Stan Wi-Fi"
+      }
+    },
+    "switch": {
+      "panel_light": {
+        "name": "Wyświetlacz"
+      },
+      "quiet": {
+        "name": "Tryb cichy"
+      },
+      "fresh_air": {
+        "name": "Świeże powietrze"
+      },
+      "xfan": {
+        "name": "Osuszanie (X-Fan)"
+      },
+      "health_mode": {
+        "name": "Jonizacja (Health)"
+      },
+      "uvc_control": {
+        "name": "Sterylizacja UVC"
+      },
+      "anti_direct_blow": {
+        "name": "Unikaj bezpośredniego nawiewu"
+      },
+      "energy_saving": {
+        "name": "Oszczędzanie energii (SE)"
+      },
+      "auto_clean": {
+        "name": "Autoczyszczenie"
+      },
+      "child_lock": {
+        "name": "Blokada rodzicielska"
+      },
+      "dazzling": {
+        "name": "Podświetlenie dekoracyjne"
+      },
+      "buzzer": {
+        "name": "Dźwięk potwierdzenia (Buzzer)"
+      }
+    },
+    "select": {
+      "swing_vertical": {
+        "name": "Żaluzja pionowa",
+        "state": {
+          "off": "Wyłączony",
+          "auto": "Pełny zakres (Auto)",
+          "fixed_top": "Stała: Góra",
+          "fixed_mid_top": "Stała: Środek-góra",
+          "fixed_mid": "Stała: Środek",
+          "fixed_mid_bottom": "Stała: Środek-dół",
+          "fixed_bottom": "Stała: Dół"
+        }
+      },
+      "swing_horizontal": {
+        "name": "Żaluzja pozioma",
+        "state": {
+          "off": "Wyłączony",
+          "auto": "Pełny zakres (Auto)",
+          "fixed_left": "Stała: Lewo",
+          "fixed_mid_left": "Stała: Środek-lewo",
+          "fixed_mid": "Stała: Środek",
+          "fixed_mid_right": "Stała: Środek-prawo",
+          "fixed_right": "Stała: Prawo"
+        }
+      }
+    }
+  }
+}

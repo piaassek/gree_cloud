@@ -1,5 +1,10 @@
 {
   "entity": {
+    "binary_sensor": {
+      "fault": {
+        "default": "mdi:alert-circle-outline"
+      }
+    },
     "switch": {
       "panel_light": {
         "default": "mdi:lightbulb"
@@ -12,6 +17,49 @@
       },
       "xfan": {
         "default": "mdi:fan"
+      },
+      "health_mode": {
+        "default": "mdi:pine-tree"
+      },
+      "uvc_control": {
+        "default": "mdi:lightbulb-germicidal"
+      },
+      "anti_direct_blow": {
+        "default": "mdi:weather-windy-variant"
+      },
+      "energy_saving": {
+        "default": "mdi:leaf"
+      },
+      "auto_clean": {
+        "default": "mdi:spray-bottle"
+      },
+      "child_lock": {
+        "default": "mdi:account-lock"
+      },
+      "dazzling": {
+        "default": "mdi:creation"
+      },
+      "buzzer": {
+        "default": "mdi:volume-high"
+      }
+    },
+    "sensor": {
+      "compressor_frequency": {
+        "default": "mdi:engine-outline"
+      },
+      "energy_total": {
+        "default": "mdi:lightning-bolt"
+      },
+      "wifi_status": {
+        "default": "mdi:wifi-check"
+      }
+    },
+    "select": {
+      "swing_vertical": {
+        "default": "mdi:arrow-up-down"
+      },
+      "swing_horizontal": {
+        "default": "mdi:arrow-left-right"
       }
     }
   }

@@ -18,6 +18,11 @@ MAX_EXPECTED_RESPONSE_TIME_INTERVAL = 180
 # Dispatcher signals
 DISPATCH_DEVICE_DISCOVERED = f"{DOMAIN}_device_discovered"
 
+
+def get_device_discovered_signal(entry_id: str) -> str:
+    """Return the dispatcher signal for device discovery scoped to a config entry."""
+    return f"{DOMAIN}_{entry_id}_device_discovered"
+
 # Fan modes (matching official integration)
 FAN_MEDIUM_LOW = "medium low"
 FAN_MEDIUM_HIGH = "medium high"
