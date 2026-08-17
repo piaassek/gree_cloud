@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import ssl
 
 from greeclimate.cloud_api import GreeCloudApi
 from greeclimate.mqtt_client import GreeMqttClient
@@ -36,6 +37,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: GreeCloudConfigEntry) ->
     _LOGGER.info("Setting up Gree Climate Cloud integration")
 
     try:
+        # Pre-load default SSL context in executor to prevent event loop blocking warnings
+        await hass.async_add_executor_job(ssl.create_default_context)
+
         # Create Cloud API client
         api = GreeCloudApi.for_server(
             entry.data[CONF_SERVER],

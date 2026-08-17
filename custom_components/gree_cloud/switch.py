@@ -38,10 +38,6 @@ class GreeCloudSwitchEntityDescription(SwitchEntityDescription):
     set_value_fn: Callable[[Device, bool], None]
 
 
-def _set_light(device: Device, value: bool) -> None:
-    device.light = value
-
-
 def _set_quiet(device: Device, value: bool) -> None:
     device.quiet = value
 
@@ -83,7 +79,6 @@ GREE_CLOUD_SWITCHES: tuple[GreeCloudSwitchEntityDescription, ...] = (
         key="Quiet",
         translation_key="quiet",
         icon="mdi:volume-off",
-        entity_category=EntityCategory.CONFIG,
         get_value_fn=lambda d: d.quiet,
         set_value_fn=_set_quiet,
     ),
@@ -91,7 +86,6 @@ GREE_CLOUD_SWITCHES: tuple[GreeCloudSwitchEntityDescription, ...] = (
         key="Fresh Air",
         translation_key="fresh_air",
         icon="mdi:air-filter",
-        entity_category=EntityCategory.CONFIG,
         get_value_fn=lambda d: d.fresh_air,
         set_value_fn=_set_fresh_air,
     ),
@@ -99,7 +93,6 @@ GREE_CLOUD_SWITCHES: tuple[GreeCloudSwitchEntityDescription, ...] = (
         key="XFan",
         translation_key="xfan",
         icon="mdi:fan",
-        entity_category=EntityCategory.CONFIG,
         get_value_fn=lambda d: d.xfan,
         set_value_fn=_set_xfan,
     ),
@@ -107,8 +100,6 @@ GREE_CLOUD_SWITCHES: tuple[GreeCloudSwitchEntityDescription, ...] = (
         key="Health mode",
         translation_key="health_mode",
         icon="mdi:pine-tree",
-        entity_category=EntityCategory.CONFIG,
-        entity_registry_enabled_default=False,
         get_value_fn=lambda d: d.anion,
         set_value_fn=_set_anion,
     ),
@@ -116,7 +107,6 @@ GREE_CLOUD_SWITCHES: tuple[GreeCloudSwitchEntityDescription, ...] = (
         key="UvcControl",
         translation_key="uvc_control",
         icon="mdi:lightbulb-germicidal",
-        entity_category=EntityCategory.CONFIG,
         get_value_fn=_create_getter("UvcControl"),
         set_value_fn=_create_setter("UvcControl"),
     ),
@@ -167,7 +157,6 @@ GREE_CLOUD_SWITCHES: tuple[GreeCloudSwitchEntityDescription, ...] = (
         translation_key="buzzer",
         icon="mdi:volume-high",
         entity_category=EntityCategory.CONFIG,
-        entity_registry_enabled_default=False,
         get_value_fn=_create_getter("BuzzerCtrl"),
         set_value_fn=_create_setter("BuzzerCtrl"),
     ),
@@ -224,6 +213,13 @@ class GreeCloudSwitch(GreeCloudEntity, SwitchEntity):
     def is_on(self) -> bool:
         """Return True if entity is on."""
         return self.entity_description.get_value_fn(self.coordinator.device)
+
+    @property
+    def icon(self) -> str | None:
+        """Return dynamic icon if defined or fallback to description."""
+        if self.entity_description.key == "BuzzerCtrl":
+            return "mdi:volume-high" if self.is_on else "mdi:volume-mute"
+        return self.entity_description.icon
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the entity on."""

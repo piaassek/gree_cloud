@@ -61,7 +61,6 @@ SELECT_TYPES: tuple[GreeCloudSelectEntityDescription, ...] = (
         translation_key="swing_vertical",
         gree_key="SwUpDn",
         icon="mdi:arrow-up-down",
-        entity_category=EntityCategory.CONFIG,
         options=list(SWING_V_MAP.values()),
         options_map=SWING_V_MAP,
         options_inv=SWING_V_INV,
@@ -71,7 +70,6 @@ SELECT_TYPES: tuple[GreeCloudSelectEntityDescription, ...] = (
         translation_key="swing_horizontal",
         gree_key="SwingLfRig",
         icon="mdi:arrow-left-right",
-        entity_category=EntityCategory.CONFIG,
         options=list(SWING_H_MAP.values()),
         options_map=SWING_H_MAP,
         options_inv=SWING_H_INV,
@@ -172,7 +170,6 @@ class GreeCloudDisplaySelect(GreeCloudEntity, SelectEntity):
 
     _attr_translation_key = "display"
     _attr_icon = "mdi:lightbulb-auto"
-    _attr_entity_category = EntityCategory.CONFIG
     _attr_options = DISPLAY_OPTIONS
 
     def __init__(self, coordinator: CloudDeviceDataUpdateCoordinator) -> None:
@@ -195,7 +192,15 @@ class GreeCloudDisplaySelect(GreeCloudEntity, SelectEntity):
         if lig == 1 and ligsen == 0:
             return "auto"
 
-        return "off"
+    @property
+    def icon(self) -> str:
+        """Return dynamic icon based on current display mode."""
+        opt = self.current_option
+        if opt == "always_on":
+            return "mdi:lightbulb-on"
+        if opt == "auto":
+            return "mdi:lightbulb-auto"
+        return "mdi:lightbulb-off-outline"
 
     async def async_select_option(self, option: str) -> None:
         """Send display backlight mode to device."""

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 import copy
 from dataclasses import dataclass, field
 from datetime import timedelta
@@ -16,7 +17,7 @@ from greeclimate.deviceinfo import DeviceInfo
 from greeclimate.mqtt_client import GreeMqttClient
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -87,6 +88,17 @@ class HWHPAwareCloudDevice(CloudDevice):
     enum. This subclass overrides ``update_state`` to include HWHP and extra
     sensors in the status request.
     """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize HWHP aware cloud device."""
+        super().__init__(*args, **kwargs)
+        self.state_update_callback: Callable[[], None] | None = None
+
+    def handle_state_update(self, **kwargs: Any) -> None:
+        """Handle incoming state update from MQTT and notify coordinator immediately."""
+        super().handle_state_update(**kwargs)
+        if self.state_update_callback is not None:
+            self.state_update_callback()
 
     async def update_state(self) -> None:
         """Update device state, including HWHP-specific properties."""
@@ -248,6 +260,15 @@ class CloudDeviceDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self.device = device
         self._error_count: int = 0
+        if isinstance(device, HWHPAwareCloudDevice):
+            device.state_update_callback = self._on_device_push_update
+
+    @callback
+    def _on_device_push_update(self) -> None:
+        """Handle real-time MQTT push state update."""
+        _LOGGER.debug("Real-time MQTT state update received for %s", self.name)
+        self._error_count = 0
+        self.async_set_updated_data(copy.deepcopy(self.device.raw_properties))
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update the state of the device from cloud."""

@@ -98,6 +98,11 @@ class GreeCloudBinarySensor(GreeCloudEntity, BinarySensorEntity):
         return bool(all_err or shutdown_fault or jf_err)
 
     @property
+    def icon(self) -> str:
+        """Return dynamic icon based on fault status."""
+        return "mdi:alert-circle" if self.is_on else "mdi:check-circle-outline"
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return extra state attributes."""
         props = getattr(self.coordinator.device, "raw_properties", {})
