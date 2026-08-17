@@ -72,6 +72,7 @@ _HWHP_EXTRA_PROPS = [
     "ShutdownFault",
     "wifiStatus",
     "TemsSenOut",
+    "LigSen",
 ]
 
 # Extra properties reported by AC units.

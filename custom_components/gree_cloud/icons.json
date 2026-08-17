@@ -6,9 +6,6 @@
       }
     },
     "switch": {
-      "panel_light": {
-        "default": "mdi:lightbulb"
-      },
       "quiet": {
         "default": "mdi:volume-off"
       },
@@ -55,6 +52,9 @@
       }
     },
     "select": {
+      "display": {
+        "default": "mdi:lightbulb-auto"
+      },
       "swing_vertical": {
         "default": "mdi:arrow-up-down"
       },

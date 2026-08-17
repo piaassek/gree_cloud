@@ -80,14 +80,6 @@ def _create_setter(key: str) -> Callable[[Device, bool], None]:
 
 GREE_CLOUD_SWITCHES: tuple[GreeCloudSwitchEntityDescription, ...] = (
     GreeCloudSwitchEntityDescription(
-        key="Panel Light",
-        translation_key="panel_light",
-        icon="mdi:lightbulb",
-        entity_category=EntityCategory.CONFIG,
-        get_value_fn=lambda d: d.light,
-        set_value_fn=_set_light,
-    ),
-    GreeCloudSwitchEntityDescription(
         key="Quiet",
         translation_key="quiet",
         icon="mdi:volume-off",
@@ -212,6 +204,8 @@ class GreeCloudSwitch(GreeCloudEntity, SwitchEntity):
     """Representation of a Gree Cloud switch entity."""
 
     _attr_device_class = SwitchDeviceClass.SWITCH
+    _attr_has_entity_name = True
+
     entity_description: GreeCloudSwitchEntityDescription
 
     def __init__(

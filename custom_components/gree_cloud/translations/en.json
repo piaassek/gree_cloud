@@ -53,9 +53,6 @@
       }
     },
     "switch": {
-      "panel_light": {
-        "name": "Panel light"
-      },
       "quiet": {
         "name": "Quiet mode"
       },
@@ -91,6 +88,14 @@
       }
     },
     "select": {
+      "display": {
+        "name": "Display backlight",
+        "state": {
+          "off": "Off",
+          "always_on": "Always on",
+          "auto": "Auto"
+        }
+      },
       "swing_vertical": {
         "name": "Vertical swing",
         "state": {

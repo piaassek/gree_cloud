@@ -1,4 +1,4 @@
-"""Support for Gree Cloud select entities (Swing control)."""
+"""Support for Gree Cloud select entities (Swing and Display control)."""
 
 from __future__ import annotations
 
@@ -78,6 +78,8 @@ SELECT_TYPES: tuple[GreeCloudSelectEntityDescription, ...] = (
     ),
 )
 
+DISPLAY_OPTIONS = ["off", "always_on", "auto"]
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -90,10 +92,14 @@ async def async_setup_entry(
     def init_device(coordinator: CloudDeviceDataUpdateCoordinator) -> None:
         if is_hwhp_device(coordinator):
             return
-        async_add_entities(
+
+        entities: list[SelectEntity] = [
             GreeCloudSelect(coordinator=coordinator, description=description)
             for description in SELECT_TYPES
-        )
+        ]
+        entities.append(GreeCloudDisplaySelect(coordinator=coordinator))
+
+        async_add_entities(entities)
 
     for coordinator in entry.runtime_data.coordinators:
         init_device(coordinator)
@@ -156,6 +162,62 @@ class GreeCloudSelect(GreeCloudEntity, SelectEntity):
                 self.coordinator.device._dirty.append(
                     self.entity_description.gree_key
                 )
+
+        await self.coordinator.push_state_update()
+        self.async_write_ha_state()
+
+
+class GreeCloudDisplaySelect(GreeCloudEntity, SelectEntity):
+    """Display backlight select entity with 3 states (Off, Always on, Auto)."""
+
+    _attr_translation_key = "display"
+    _attr_icon = "mdi:lightbulb-auto"
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_options = DISPLAY_OPTIONS
+
+    def __init__(self, coordinator: CloudDeviceDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = (
+            f"{coordinator.device.device_info.mac}_display_select_v3"
+        )
+
+    @property
+    def current_option(self) -> str | None:
+        """Read current display state from cloud properties."""
+        raw = getattr(self.coordinator.device, "raw_properties", {})
+        lig = raw.get("Lig", 0)
+        ligsen = raw.get("LigSen", 0)
+
+        if lig == 0:
+            return "off"
+        if lig == 1 and ligsen == 1:
+            return "always_on"
+        if lig == 1 and ligsen == 0:
+            return "auto"
+
+        return "off"
+
+    async def async_select_option(self, option: str) -> None:
+        """Send display backlight mode to device."""
+        dev = self.coordinator.device
+        if not hasattr(dev, "raw_properties"):
+            return
+
+        if option == "always_on":
+            dev.raw_properties["Lig"] = 1
+            dev.raw_properties["LigSen"] = 1
+        elif option == "auto":
+            dev.raw_properties["Lig"] = 1
+            dev.raw_properties["LigSen"] = 0
+        else:  # off
+            dev.raw_properties["Lig"] = 0
+            dev.raw_properties["LigSen"] = 0
+
+        if hasattr(dev, "_dirty"):
+            if "Lig" not in dev._dirty:
+                dev._dirty.append("Lig")
+            if "LigSen" not in dev._dirty:
+                dev._dirty.append("LigSen")
 
         await self.coordinator.push_state_update()
         self.async_write_ha_state()

@@ -17,9 +17,23 @@ class GreeCloudEntity(CoordinatorEntity[CloudDeviceDataUpdateCoordinator]):
     def __init__(self, coordinator: CloudDeviceDataUpdateCoordinator) -> None:
         """Initialize the entity."""
         super().__init__(coordinator)
+        device = coordinator.device
+        props = getattr(device, "raw_properties", {})
+        ver = props.get("ver")
+        device_ver = getattr(device, "version", None)
+
+        sw_version = None
+        if ver and device_ver:
+            sw_version = f"{ver} (v{device_ver})"
+        elif ver:
+            sw_version = str(ver)
+        elif device_ver:
+            sw_version = f"v{device_ver}"
+
         self._attr_device_info = HADeviceInfo(
-            identifiers={(DOMAIN, coordinator.device.device_info.mac)},
-            name=coordinator.device.device_info.name,
+            identifiers={(DOMAIN, device.device_info.mac)},
+            name=device.device_info.name,
             manufacturer="Gree",
-            model=coordinator.device.hid or "Unknown Model",
+            model=device.hid or "Unknown Model",
+            sw_version=sw_version,
         )

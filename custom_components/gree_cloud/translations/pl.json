@@ -53,9 +53,6 @@
       }
     },
     "switch": {
-      "panel_light": {
-        "name": "Wyświetlacz"
-      },
       "quiet": {
         "name": "Tryb cichy"
       },
@@ -91,6 +88,14 @@
       }
     },
     "select": {
+      "display": {
+        "name": "Podświetlenie wyświetlacza",
+        "state": {
+          "off": "Wyłączony",
+          "always_on": "Zawsze jasne",
+          "auto": "Auto"
+        }
+      },
       "swing_vertical": {
         "name": "Żaluzja pionowa",
         "state": {
