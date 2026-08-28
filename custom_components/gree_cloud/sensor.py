@@ -185,6 +185,13 @@ SENSORS: tuple[GreeCloudSensorEntityDescription, ...] = (
         icon="mdi:wifi-check",
         get_value_fn=_get_raw("wifiStatus"),
     ),
+    GreeCloudSensorEntityDescription(
+        key="all_parameters",
+        translation_key="all_parameters",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:code-json",
+        get_value_fn=lambda d: f"{len(getattr(d, 'raw_properties', {}))} parametrów",
+    ),
 )
 
 
@@ -235,3 +242,10 @@ class GreeCloudSensor(GreeCloudEntity, SensorEntity):
     def native_value(self) -> Any:
         """Return native value of the sensor."""
         return self.entity_description.get_value_fn(self.coordinator.device)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return diagnostic attributes for sensor."""
+        if self.entity_description.key == "all_parameters":
+            return getattr(self.coordinator.device, "raw_properties", {})
+        return {}

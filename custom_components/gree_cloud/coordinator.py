@@ -8,6 +8,7 @@ import copy
 from dataclasses import dataclass, field
 from datetime import timedelta
 import logging
+import ssl
 from typing import Any
 
 from greeclimate.cloud_api import GreeCloudApi
@@ -65,7 +66,13 @@ _HWHP_EXTRA_PROPS = [
     "ChildLock",
     "AntiDirectBlow",
     "SvSt",
+    "AutoClean",
     "AutoCleanSta",
+    "AutoCleanStaEx",
+    "StCln",
+    "SelfClean",
+    "Clean",
+    "FilClr",
     "Dazzling",
     "BuzzerCtrl",
     "AllErr",
@@ -74,6 +81,12 @@ _HWHP_EXTRA_PROPS = [
     "wifiStatus",
     "TemsSenOut",
     "LigSen",
+    "Add0.5",
+    "Dfltr",
+    "ReplaceHEPA",
+    "ElcEn",
+    "CoolFeel",
+    "NobodySave",
 ]
 
 # Extra properties reported by AC units.
@@ -86,16 +99,82 @@ class HWHPAwareCloudDevice(CloudDevice):
     The Gree WHIO Hot Water Heat Pump reports current water temperature under
     the ``WatTmp`` property key which is not part of the standard ``Props``
     enum. This subclass overrides ``update_state`` to include HWHP and extra
-    sensors in the status request.
+    sensors in the status request, supports arbitrary custom property keys in
+    ``push_state_update``, and implements anti-bounce protection.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize HWHP aware cloud device."""
         super().__init__(*args, **kwargs)
         self.state_update_callback: Callable[[], None] | None = None
+        self._pending_updates: dict[str, Any] = {}
+        self._last_push_time: float = 0.0
+
+    async def push_state_update(self) -> None:
+        """Send pending property changes to the cloud device."""
+        if not self._dirty:
+            return
+
+        opt: list[str] = []
+        p: list[Any] = []
+
+        for prop in list(self._dirty):
+            if isinstance(prop, Props):
+                opt.append(prop.value)
+                val = self._props.get(prop, 0)
+                p.append(val)
+                self._pending_updates[prop.value] = val
+            elif isinstance(prop, str):
+                opt.append(prop)
+                val = self.raw_properties.get(prop, 0)
+                p.append(val)
+                self._pending_updates[prop] = val
+
+        if not opt:
+            self._dirty.clear()
+            return
+
+        command = {
+            "t": "cmd",
+            "opt": opt,
+            "p": p,
+        }
+
+        self._last_push_time = asyncio.get_running_loop().time()
+
+        await self._mqtt_client.publish_command(
+            self._parent_mac,
+            command,
+            self.device_cipher,
+            self._child_mac,
+        )
+        self._dirty.clear()
 
     def handle_state_update(self, **kwargs: Any) -> None:
         """Handle incoming state update from MQTT and notify coordinator immediately."""
+        now = asyncio.get_running_loop().time()
+
+        # Anti-bounce protection: for 2.5s after user pushes a command,
+        # don't allow stale in-flight MQTT packets to revert user's pending changes.
+        if self._pending_updates and (now - self._last_push_time < 2.5):
+            cols = kwargs.get("cols", [])
+            dat = kwargs.get("dat", [])
+            if cols and dat and len(cols) == len(dat):
+                data_dict = dict(zip(cols, dat))
+                all_matched = True
+                for k, v in list(self._pending_updates.items()):
+                    if k in data_dict:
+                        if data_dict[k] == v:
+                            self._pending_updates.pop(k, None)
+                        else:
+                            all_matched = False
+                            idx = cols.index(k)
+                            dat[idx] = v
+                if all_matched:
+                    self._pending_updates.clear()
+        else:
+            self._pending_updates.clear()
+
         super().handle_state_update(**kwargs)
         if self.state_update_callback is not None:
             self.state_update_callback()
@@ -203,7 +282,13 @@ async def async_reconnect_mqtt(
                 credentials.token,
                 server=mqtt_server,
             )
-            await new_client.connect()
+            ssl_context = await hass.async_add_executor_job(ssl.create_default_context)
+            orig_create_default_context = ssl.create_default_context
+            ssl.create_default_context = lambda *args, **kwargs: ssl_context
+            try:
+                await new_client.connect()
+            finally:
+                ssl.create_default_context = orig_create_default_context
         except Exception as err:
             _LOGGER.error("MQTT reconnect failed during connect: %s", err)
             return False

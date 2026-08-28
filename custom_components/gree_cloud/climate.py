@@ -36,7 +36,7 @@ from homeassistant.components.climate import (
     ClimateEntityFeature,
     HVACMode,
 )
-from homeassistant.const import ATTR_TEMPERATURE, PRECISION_WHOLE, UnitOfTemperature
+from homeassistant.const import ATTR_TEMPERATURE, PRECISION_HALVES, PRECISION_WHOLE, UnitOfTemperature
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -117,7 +117,7 @@ async def async_setup_entry(
 class GreeCloudClimateEntity(GreeCloudEntity, ClimateEntity):
     """Representation of a Gree Cloud HVAC device."""
 
-    _attr_precision = PRECISION_WHOLE
+    _attr_precision = PRECISION_HALVES
     _attr_supported_features = (
         ClimateEntityFeature.TARGET_TEMPERATURE
         | ClimateEntityFeature.FAN_MODE
@@ -126,7 +126,7 @@ class GreeCloudClimateEntity(GreeCloudEntity, ClimateEntity):
         | ClimateEntityFeature.TURN_OFF
         | ClimateEntityFeature.TURN_ON
     )
-    _attr_target_temperature_step = TARGET_TEMPERATURE_STEP
+    _attr_target_temperature_step = 0.5
     _attr_hvac_modes = [*HVAC_MODES_REVERSE, HVACMode.OFF]
     _attr_preset_modes = PRESET_MODES
     _attr_fan_modes = [*FAN_MODES_REVERSE]
@@ -147,9 +147,17 @@ class GreeCloudClimateEntity(GreeCloudEntity, ClimateEntity):
         return self.coordinator.device.current_temperature
 
     @property
-    def target_temperature(self) -> float:
+    def target_temperature(self) -> float | None:
         """Return the target temperature for the device."""
-        return self.coordinator.device.target_temperature
+        raw = getattr(self.coordinator.device, "raw_properties", {})
+        temp = raw.get("SetTem")
+        if temp is None:
+            temp = self.coordinator.device.target_temperature
+        if temp is not None:
+            if raw.get("Add0.5", 0) == 1:
+                return float(temp) + 0.5
+            return float(temp)
+        return None
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
@@ -159,14 +167,26 @@ class GreeCloudClimateEntity(GreeCloudEntity, ClimateEntity):
         if hvac_mode := kwargs.get(ATTR_HVAC_MODE):
             await self.async_set_hvac_mode(hvac_mode)
 
-        temperature = kwargs[ATTR_TEMPERATURE]
+        temperature = float(kwargs[ATTR_TEMPERATURE])
         _LOGGER.debug(
-            "Setting temperature to %d for %s",
+            "Setting temperature to %.1f for %s",
             temperature,
             self.coordinator.device.device_info.name,
         )
 
-        self.coordinator.device.target_temperature = temperature
+        int_temp = int(temperature)
+        has_half = (temperature - int_temp) >= 0.4
+
+        self.coordinator.device.target_temperature = int_temp
+        raw = getattr(self.coordinator.device, "raw_properties", {})
+        raw["SetTem"] = int_temp
+        raw["Add0.5"] = 1 if has_half else 0
+
+        if hasattr(self.coordinator.device, "_dirty"):
+            if "Add0.5" not in self.coordinator.device._dirty:
+                self.coordinator.device._dirty.append("Add0.5")
+
+        self.async_write_ha_state()
         await self.coordinator.push_state_update()
         self.async_write_ha_state()
 

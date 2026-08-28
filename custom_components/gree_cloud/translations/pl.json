@@ -24,6 +24,9 @@
     "binary_sensor": {
       "fault": {
         "name": "Awaria / Błąd"
+      },
+      "filter_clean": {
+        "name": "Przypomnienie o czyszczeniu filtra"
       }
     },
     "sensor": {
@@ -50,6 +53,9 @@
       },
       "wifi_status": {
         "name": "Stan Wi-Fi"
+      },
+      "all_parameters": {
+        "name": "Wszystkie parametry"
       }
     },
     "switch": {

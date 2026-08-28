@@ -38,7 +38,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GreeCloudConfigEntry) ->
 
     try:
         # Pre-load default SSL context in executor to prevent event loop blocking warnings
-        await hass.async_add_executor_job(ssl.create_default_context)
+        ssl_context = await hass.async_add_executor_job(ssl.create_default_context)
 
         # Create Cloud API client
         api = GreeCloudApi.for_server(
@@ -62,7 +62,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: GreeCloudConfigEntry) ->
         mqtt_client = GreeMqttClient(
             credentials.user_id, credentials.token, server=mqtt_server
         )
-        await mqtt_client.connect()
+
+        orig_create_default_context = ssl.create_default_context
+        ssl.create_default_context = lambda *args, **kwargs: ssl_context
+        try:
+            await mqtt_client.connect()
+        finally:
+            ssl.create_default_context = orig_create_default_context
 
         # Store runtime data
         entry.runtime_data = GreeCloudRuntimeData(

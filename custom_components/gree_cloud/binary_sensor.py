@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 import logging
 from typing import Any
@@ -31,6 +32,8 @@ _LOGGER = logging.getLogger(__name__)
 class GreeCloudBinarySensorEntityDescription(BinarySensorEntityDescription):
     """Class describing Gree Cloud binary sensor entities."""
 
+    is_on_fn: Callable[[dict[str, Any]], bool]
+
 
 BINARY_SENSORS: tuple[GreeCloudBinarySensorEntityDescription, ...] = (
     GreeCloudBinarySensorEntityDescription(
@@ -38,6 +41,17 @@ BINARY_SENSORS: tuple[GreeCloudBinarySensorEntityDescription, ...] = (
         translation_key="fault",
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
+        is_on_fn=lambda p: bool(
+            p.get("AllErr") or p.get("ShutdownFault") or p.get("JFErrorCode")
+        ),
+    ),
+    GreeCloudBinarySensorEntityDescription(
+        key="filter_clean",
+        translation_key="filter_clean",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:air-filter",
+        is_on_fn=lambda p: bool(p.get("Dfltr") or p.get("ReplaceHEPA")),
     ),
 )
 
@@ -91,16 +105,16 @@ class GreeCloudBinarySensor(GreeCloudEntity, BinarySensorEntity):
     def is_on(self) -> bool:
         """Return True if the binary sensor is on."""
         props = getattr(self.coordinator.device, "raw_properties", {})
-        all_err = props.get("AllErr", 0)
-        shutdown_fault = props.get("ShutdownFault", 0)
-        jf_err = props.get("JFErrorCode", 0)
-
-        return bool(all_err or shutdown_fault or jf_err)
+        return self.entity_description.is_on_fn(props)
 
     @property
     def icon(self) -> str:
-        """Return dynamic icon based on fault status."""
-        return "mdi:alert-circle" if self.is_on else "mdi:check-circle-outline"
+        """Return dynamic icon based on sensor status."""
+        if self.entity_description.key == "fault":
+            return "mdi:alert-circle" if self.is_on else "mdi:check-circle-outline"
+        if self.entity_description.key == "filter_clean":
+            return "mdi:air-filter" if not self.is_on else "mdi:filter-remove-outline"
+        return self.entity_description.icon or "mdi:help-circle-outline"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -108,11 +122,17 @@ class GreeCloudBinarySensor(GreeCloudEntity, BinarySensorEntity):
         props = getattr(self.coordinator.device, "raw_properties", {})
         attrs: dict[str, Any] = {}
 
-        if (all_err := props.get("AllErr")) is not None:
-            attrs["all_err"] = all_err
-        if (shutdown_fault := props.get("ShutdownFault")) is not None:
-            attrs["shutdown_fault"] = shutdown_fault
-        if (jf_err := props.get("JFErrorCode")) is not None:
-            attrs["jf_error_code"] = jf_err
+        if self.entity_description.key == "fault":
+            if (all_err := props.get("AllErr")) is not None:
+                attrs["all_err"] = all_err
+            if (shutdown_fault := props.get("ShutdownFault")) is not None:
+                attrs["shutdown_fault"] = shutdown_fault
+            if (jf_err := props.get("JFErrorCode")) is not None:
+                attrs["jf_error_code"] = jf_err
+        elif self.entity_description.key == "filter_clean":
+            if (dfltr := props.get("Dfltr")) is not None:
+                attrs["dfltr"] = dfltr
+            if (hepa := props.get("ReplaceHEPA")) is not None:
+                attrs["replace_hepa"] = hepa
 
         return attrs

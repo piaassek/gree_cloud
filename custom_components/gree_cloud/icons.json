@@ -3,6 +3,9 @@
     "binary_sensor": {
       "fault": {
         "default": "mdi:alert-circle-outline"
+      },
+      "filter_clean": {
+        "default": "mdi:air-filter"
       }
     },
     "switch": {
@@ -49,6 +52,9 @@
       },
       "wifi_status": {
         "default": "mdi:wifi-check"
+      },
+      "all_parameters": {
+        "default": "mdi:code-json"
       }
     },
     "select": {

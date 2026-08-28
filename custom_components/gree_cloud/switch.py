@@ -54,6 +54,34 @@ def _set_anion(device: Device, value: bool) -> None:
     device.anion = value
 
 
+def _get_autoclean(device: Device) -> bool:
+    if hasattr(device, "raw_properties"):
+        raw = device.raw_properties
+        if (
+            raw.get("AutoClean")
+            or raw.get("AutoCleanSta")
+            or raw.get("AutoCleanStaEx")
+            or raw.get("StCln")
+            or raw.get("SelfClean")
+            or raw.get("Clean")
+        ):
+            return True
+        # Hardware CL cycle: AC is off (Pow: 0), but compressor inverter is running (CompressorFqy > 0)
+        if raw.get("Pow") == 0 and raw.get("CompressorFqy", 0) > 0:
+            return True
+    return False
+
+
+def _set_autoclean(device: Device, value: bool) -> None:
+    val = 1 if value else 0
+    if hasattr(device, "raw_properties"):
+        # The AC hardware requires both StCln and SelfClean to trigger the CL cycle
+        for k in ("StCln", "SelfClean"):
+            device.raw_properties[k] = val
+            if hasattr(device, "_dirty") and k not in device._dirty:
+                device._dirty.append(k)
+
+
 def _create_getter(key: str) -> Callable[[Device], bool]:
     def _get(device: Device) -> bool:
         if hasattr(device, "raw_properties"):
@@ -127,12 +155,12 @@ GREE_CLOUD_SWITCHES: tuple[GreeCloudSwitchEntityDescription, ...] = (
         set_value_fn=_create_setter("SvSt"),
     ),
     GreeCloudSwitchEntityDescription(
-        key="AutoCleanSta",
+        key="AutoClean",
         translation_key="auto_clean",
         icon="mdi:spray-bottle",
         entity_category=EntityCategory.CONFIG,
-        get_value_fn=_create_getter("AutoCleanSta"),
-        set_value_fn=_create_setter("AutoCleanSta"),
+        get_value_fn=_get_autoclean,
+        set_value_fn=_set_autoclean,
     ),
     GreeCloudSwitchEntityDescription(
         key="ChildLock",
@@ -220,6 +248,13 @@ class GreeCloudSwitch(GreeCloudEntity, SwitchEntity):
         if self.entity_description.key == "BuzzerCtrl":
             return "mdi:volume-high" if self.is_on else "mdi:volume-mute"
         return self.entity_description.icon
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return diagnostic attributes for switches."""
+        if self.entity_description.key == "AutoClean":
+            return getattr(self.coordinator.device, "raw_properties", {})
+        return {}
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the entity on."""
