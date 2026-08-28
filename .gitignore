@@ -5,3 +5,9 @@ __pycache__/
 .DS_Store
 *.swp
 *.swo
+
+# Ignore root-level duplicate files (tracked in custom_components/gree_cloud)
+/*.py
+/*.json
+/translations/
+
