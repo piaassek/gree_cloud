@@ -59,6 +59,9 @@
       }
     },
     "switch": {
+      "light": {
+        "name": "Podświetlenie panelu"
+      },
       "quiet": {
         "name": "Tryb cichy"
       },

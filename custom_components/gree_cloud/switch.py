@@ -38,6 +38,10 @@ class GreeCloudSwitchEntityDescription(SwitchEntityDescription):
     set_value_fn: Callable[[Device, bool], None]
 
 
+def _set_light(device: Device, value: bool) -> None:
+    device.light = value
+
+
 def _set_quiet(device: Device, value: bool) -> None:
     device.quiet = value
 
@@ -103,6 +107,13 @@ def _create_setter(key: str) -> Callable[[Device, bool], None]:
 
 
 GREE_CLOUD_SWITCHES: tuple[GreeCloudSwitchEntityDescription, ...] = (
+    GreeCloudSwitchEntityDescription(
+        key="Panel Light",
+        translation_key="light",
+        icon="mdi:lightbulb",
+        get_value_fn=lambda d: d.light,
+        set_value_fn=_set_light,
+    ),
     GreeCloudSwitchEntityDescription(
         key="Quiet",
         translation_key="quiet",
@@ -234,7 +245,7 @@ class GreeCloudSwitch(GreeCloudEntity, SwitchEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = (
-            f"{coordinator.device.device_info.mac}_{description.key}_v3"
+            f"{coordinator.device.device_info.mac}_{description.key}"
         )
 
     @property

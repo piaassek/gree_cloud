@@ -59,6 +59,9 @@
       }
     },
     "switch": {
+      "light": {
+        "name": "Panel light"
+      },
       "quiet": {
         "name": "Quiet mode"
       },

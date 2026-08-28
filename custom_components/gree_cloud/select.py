@@ -123,7 +123,7 @@ class GreeCloudSelect(GreeCloudEntity, SelectEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = (
-            f"{coordinator.device.device_info.mac}_{description.key}_v3"
+            f"{coordinator.device.device_info.mac}_{description.key}"
         )
 
     @property
@@ -175,7 +175,7 @@ class GreeCloudDisplaySelect(GreeCloudEntity, SelectEntity):
     def __init__(self, coordinator: CloudDeviceDataUpdateCoordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = (
-            f"{coordinator.device.device_info.mac}_display_select_v3"
+            f"{coordinator.device.device_info.mac}_display_select"
         )
 
     @property

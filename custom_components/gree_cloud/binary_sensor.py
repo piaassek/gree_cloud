@@ -98,7 +98,7 @@ class GreeCloudBinarySensor(GreeCloudEntity, BinarySensorEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = (
-            f"{coordinator.device.device_info.mac}_{description.key}_v3"
+            f"{coordinator.device.device_info.mac}_{description.key}"
         )
 
     @property
